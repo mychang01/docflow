@@ -7,10 +7,10 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
-    .thumbnail-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-    .thumbnail-card { cursor: pointer; border-radius: 6px; overflow: hidden; border: 2px solid transparent; transition: border-color 0.15s; }
+    .thumbnail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .thumbnail-card { cursor: pointer; border-radius: 6px; overflow: hidden; border: 2px solid transparent; transition: border-color 0.15s; height: calc(41vh - 6px); background: #1e293b; display: flex; align-items: center; justify-content: center; }
     .thumbnail-card:hover { border-color: #60a5fa; }
-    .thumbnail-card img { width: 100%; display: block; }
+    .thumbnail-card img { width: auto; max-width: 100%; height: 100%; display: block; object-fit: contain; }
     .prose-dark h1, .prose-dark h2, .prose-dark h3 { color: #f1f5f9; margin: 1rem 0 0.5rem; }
     .prose-dark p { color: #cbd5e1; margin: 0.5rem 0; line-height: 1.7; }
     .prose-dark table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
@@ -35,7 +35,7 @@
     <span class="ml-auto text-xs text-slate-500 font-mono">mistral-ocr-2512</span>
   </header>
 
-  <main class="max-w-6xl mx-auto px-4 py-8">
+  <main class="max-w-[1440px] mx-auto px-4 py-8">
 
     <!-- Step indicator -->
     <div class="flex items-center gap-2 mb-8 text-sm" id="steps">
@@ -66,7 +66,7 @@
             d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
         </svg>
         <p class="text-lg text-slate-300 mb-2">拖曳檔案至此，或點擊選擇</p>
-        <p class="text-sm text-slate-500">最大 25MB，支援 PDF / JPG / PNG</p>
+        <p class="text-sm text-slate-500">最大 50MB，支援 PDF / JPG / PNG</p>
         <input type="file" id="file-input" accept=".pdf,.jpg,.jpeg,.png" class="hidden" />
       </div>
       <div id="upload-error" class="hidden mt-3 text-red-400 text-sm text-center"></div>
@@ -81,24 +81,24 @@
       <div class="flex gap-6">
 
         <!-- Left: thumbnails -->
-        <div class="w-64 flex-shrink-0">
+        <div class="flex-1 min-w-0">
           <div class="flex items-center justify-between mb-3">
             <h2 class="font-semibold text-slate-300 text-sm uppercase tracking-wider">頁面預覽</h2>
             <span id="page-count-label" class="text-xs text-slate-500"></span>
           </div>
-          <div id="thumbnail-grid" class="thumbnail-grid overflow-y-auto max-h-[70vh]"></div>
+          <div id="thumbnail-grid" class="thumbnail-grid overflow-y-auto max-h-[82vh]"></div>
         </div>
 
         <!-- Right: range controls -->
-        <div class="flex-1">
-          <div class="bg-slate-800 rounded-xl p-6 mb-4">
-            <h2 class="font-semibold text-slate-200 mb-1">選擇頁數範圍</h2>
-            <p class="text-xs text-slate-500 mb-5">可新增多個範圍，1-indexed</p>
+        <div class="w-56 flex-shrink-0">
+          <div class="bg-slate-800 rounded-xl p-4 mb-3">
+            <h2 class="font-medium text-slate-200 text-sm mb-1">選擇頁數範圍</h2>
+            <p class="text-xs text-slate-500 mb-3">可新增多個範圍，1-indexed</p>
 
-            <div id="range-list" class="space-y-3 mb-4"></div>
+            <div id="range-list" class="space-y-2 mb-3"></div>
 
-            <button onclick="addRange()" class="flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button onclick="addRange()" class="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
               </svg>
               新增範圍
@@ -106,12 +106,12 @@
           </div>
 
           <!-- Selected ranges summary -->
-          <div id="range-summary" class="hidden mb-4 flex flex-wrap gap-2"></div>
+          <div id="range-summary" class="hidden mb-3 flex flex-wrap gap-1.5"></div>
 
           <!-- OCR button -->
           <button id="ocr-btn" onclick="runOCR()"
-            class="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-semibold text-white transition-colors flex items-center justify-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-semibold text-white transition-colors flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-2"/>
             </svg>
@@ -119,11 +119,11 @@
           </button>
 
           <!-- Processing indicator -->
-          <div id="ocr-progress" class="hidden mt-4 flex items-center justify-center gap-3">
+          <div id="ocr-progress" class="hidden mt-3 flex items-center justify-center gap-2">
             <div class="spinner"></div>
-            <span class="text-slate-400">正在用 Mistral OCR 解析文件...</span>
+            <span class="text-slate-400 text-xs">OCR 解析中...</span>
           </div>
-          <div id="ocr-error" class="hidden mt-3 text-red-400 text-sm"></div>
+          <div id="ocr-error" class="hidden mt-2 text-red-400 text-xs"></div>
         </div>
       </div>
     </section>

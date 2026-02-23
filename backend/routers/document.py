@@ -21,7 +21,7 @@ os.makedirs(TEMP_DIR, exist_ok=True)
 _documents: dict = {}
 _results: dict = {}
 
-MAX_FILE_SIZE = 25 * 1024 * 1024  # 25 MB
+MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
 
 
 class ProcessRequest(BaseModel):
@@ -36,7 +36,7 @@ async def upload_document(file: UploadFile = File(...)):
 
     content = await file.read()
     if len(content) > MAX_FILE_SIZE:
-        raise HTTPException(400, "File exceeds 25 MB limit")
+        raise HTTPException(400, "File exceeds 50 MB limit")
 
     doc_id = str(uuid.uuid4())
     is_image = ext in IMAGE_EXTENSIONS

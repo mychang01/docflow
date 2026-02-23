@@ -62,8 +62,8 @@ async function handleUpload(file) {
     showError('upload-error', '支援格式：PDF、JPG、PNG');
     return;
   }
-  if (file.size > 25 * 1024 * 1024) {
-    showError('upload-error', '檔案超過 25MB 限制');
+  if (file.size > 50 * 1024 * 1024) {
+    showError('upload-error', '檔案超過 50MB 限制');
     return;
   }
 
@@ -119,8 +119,7 @@ function loadThumbnails() {
   const grid = $('thumbnail-grid');
   grid.innerHTML = '';
 
-  // Load up to 30 pages as thumbnails; lazy-load the rest
-  const limit = Math.min(state.totalPages, 60);
+  const limit = state.totalPages;
 
   for (let i = 1; i <= limit; i++) {
     const card = document.createElement('div');
@@ -129,7 +128,6 @@ function loadThumbnails() {
 
     const img = document.createElement('img');
     img.alt = `Page ${i}`;
-    img.style.minHeight = '80px';
     img.style.background = '#1e293b';
 
     // Use IntersectionObserver for lazy loading
@@ -153,12 +151,6 @@ function loadThumbnails() {
     grid.appendChild(card);
   }
 
-  if (state.totalPages > limit) {
-    const note = document.createElement('div');
-    note.className = 'col-span-3 text-xs text-slate-500 text-center py-2';
-    note.textContent = `... 共 ${state.totalPages} 頁`;
-    grid.appendChild(note);
-  }
 }
 
 // ─── Page ranges ─────────────────────────────────────────────────────────────
@@ -190,17 +182,18 @@ function renderRanges() {
     row.className = 'flex items-center gap-3';
 
     row.innerHTML = `
-      <span class="text-xs text-slate-500 w-16">Range ${i + 1}</span>
-      <div class="flex items-center gap-2">
-        <span class="text-xs text-slate-400">從</span>
-        <input type="number" min="1" max="${state.totalPages}" value="${range.start}"
-          class="w-20 bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
-          onchange="updateRange(${i}, 'start', this.value)" />
-        <span class="text-xs text-slate-400">到</span>
-        <input type="number" min="1" max="${state.totalPages}" value="${range.end}"
-          class="w-20 bg-slate-700 border border-slate-600 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
-          onchange="updateRange(${i}, 'end', this.value)" />
-        <span class="text-xs text-slate-500">/ ${state.totalPages}</span>
+      <div class="flex flex-col gap-1.5 w-full">
+        <span class="text-xs text-slate-500">Range ${i + 1}</span>
+        <div class="flex items-center gap-1.5">
+          <input type="number" min="1" max="${state.totalPages}" value="${range.start}"
+            class="w-14 bg-slate-700 border border-slate-600 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-blue-500"
+            onchange="updateRange(${i}, 'start', this.value)" />
+          <span class="text-xs text-slate-500">—</span>
+          <input type="number" min="1" max="${state.totalPages}" value="${range.end}"
+            class="w-14 bg-slate-700 border border-slate-600 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-blue-500"
+            onchange="updateRange(${i}, 'end', this.value)" />
+          <span class="text-xs text-slate-500">/${state.totalPages}</span>
+        </div>
       </div>
       ${state.ranges.length > 1 ? `
         <button onclick="removeRange(${i})" class="text-slate-500 hover:text-red-400 transition-colors ml-1">
