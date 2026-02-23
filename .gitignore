@@ -1,0 +1,16 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.Python
+
+# Environment
+.env
+
+# Temp files
+backend/temp/*
+!backend/temp/.gitkeep
+
+# OS
+.DS_Store

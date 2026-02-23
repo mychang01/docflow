@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DocFlow AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    .thumbnail-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .thumbnail-card { cursor: pointer; border-radius: 6px; overflow: hidden; border: 2px solid transparent; transition: border-color 0.15s; }
+    .thumbnail-card:hover { border-color: #60a5fa; }
+    .thumbnail-card img { width: 100%; display: block; }
+    .prose-dark h1, .prose-dark h2, .prose-dark h3 { color: #f1f5f9; margin: 1rem 0 0.5rem; }
+    .prose-dark p { color: #cbd5e1; margin: 0.5rem 0; line-height: 1.7; }
+    .prose-dark table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+    .prose-dark th { background: #334155; color: #f1f5f9; padding: 8px 12px; border: 1px solid #475569; }
+    .prose-dark td { color: #cbd5e1; padding: 8px 12px; border: 1px solid #475569; }
+    .prose-dark hr { border-color: #334155; margin: 1.5rem 0; }
+    .prose-dark code { background: #1e293b; color: #7dd3fc; padding: 2px 6px; border-radius: 4px; }
+    .prose-dark pre { background: #1e293b; padding: 1rem; border-radius: 8px; overflow-x: auto; }
+    .spinner { border: 3px solid #334155; border-top-color: #3b82f6; border-radius: 50%; width: 32px; height: 32px; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+
+  <!-- Header -->
+  <header class="border-b border-slate-700 px-6 py-4 flex items-center gap-3">
+    <svg class="w-7 h-7 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414A1 1 0 0119 9.414V19a2 2 0 01-2 2z"/>
+    </svg>
+    <h1 class="text-xl font-bold tracking-tight">DocFlow <span class="text-blue-400">AI</span></h1>
+    <span class="ml-auto text-xs text-slate-500 font-mono">mistral-ocr-2512</span>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-8">
+
+    <!-- Step indicator -->
+    <div class="flex items-center gap-2 mb-8 text-sm" id="steps">
+      <div class="step-dot flex items-center gap-2" data-step="1">
+        <span id="step1-dot" class="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center text-xs font-bold">1</span>
+        <span class="text-slate-300">Upload</span>
+      </div>
+      <div class="h-px w-8 bg-slate-600"></div>
+      <div class="step-dot flex items-center gap-2" data-step="2">
+        <span id="step2-dot" class="w-7 h-7 rounded-full bg-slate-600 flex items-center justify-center text-xs font-bold">2</span>
+        <span class="text-slate-500">Select Pages</span>
+      </div>
+      <div class="h-px w-8 bg-slate-600"></div>
+      <div class="step-dot flex items-center gap-2" data-step="3">
+        <span id="step3-dot" class="w-7 h-7 rounded-full bg-slate-600 flex items-center justify-center text-xs font-bold">3</span>
+        <span class="text-slate-500">Results</span>
+      </div>
+    </div>
+
+    <!-- Section 1: Upload -->
+    <section id="section-upload">
+      <div id="drop-zone"
+        class="border-2 border-dashed border-slate-600 rounded-xl p-16 text-center cursor-pointer hover:border-blue-400 transition-colors"
+        onclick="document.getElementById('file-input').click()"
+      >
+        <svg class="w-16 h-16 text-slate-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+        </svg>
+        <p class="text-lg text-slate-300 mb-2">拖曳檔案至此，或點擊選擇</p>
+        <p class="text-sm text-slate-500">最大 25MB，支援 PDF / JPG / PNG</p>
+        <input type="file" id="file-input" accept=".pdf,.jpg,.jpeg,.png" class="hidden" />
+      </div>
+      <div id="upload-error" class="hidden mt-3 text-red-400 text-sm text-center"></div>
+      <div id="upload-progress" class="hidden mt-6 flex items-center justify-center gap-3">
+        <div class="spinner"></div>
+        <span class="text-slate-400">上傳中...</span>
+      </div>
+    </section>
+
+    <!-- Section 2: Preview + Range Select -->
+    <section id="section-preview" class="hidden">
+      <div class="flex gap-6">
+
+        <!-- Left: thumbnails -->
+        <div class="w-64 flex-shrink-0">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="font-semibold text-slate-300 text-sm uppercase tracking-wider">頁面預覽</h2>
+            <span id="page-count-label" class="text-xs text-slate-500"></span>
+          </div>
+          <div id="thumbnail-grid" class="thumbnail-grid overflow-y-auto max-h-[70vh]"></div>
+        </div>
+
+        <!-- Right: range controls -->
+        <div class="flex-1">
+          <div class="bg-slate-800 rounded-xl p-6 mb-4">
+            <h2 class="font-semibold text-slate-200 mb-1">選擇頁數範圍</h2>
+            <p class="text-xs text-slate-500 mb-5">可新增多個範圍，1-indexed</p>
+
+            <div id="range-list" class="space-y-3 mb-4"></div>
+
+            <button onclick="addRange()" class="flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300 transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+              </svg>
+              新增範圍
+            </button>
+          </div>
+
+          <!-- Selected ranges summary -->
+          <div id="range-summary" class="hidden mb-4 flex flex-wrap gap-2"></div>
+
+          <!-- OCR button -->
+          <button id="ocr-btn" onclick="runOCR()"
+            class="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-semibold text-white transition-colors flex items-center justify-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-2"/>
+            </svg>
+            執行 OCR
+          </button>
+
+          <!-- Processing indicator -->
+          <div id="ocr-progress" class="hidden mt-4 flex items-center justify-center gap-3">
+            <div class="spinner"></div>
+            <span class="text-slate-400">正在用 Mistral OCR 解析文件...</span>
+          </div>
+          <div id="ocr-error" class="hidden mt-3 text-red-400 text-sm"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 3: Results -->
+    <section id="section-results" class="hidden">
+      <!-- Toolbar -->
+      <div class="flex items-center gap-4 mb-4 flex-wrap">
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          <span id="result-info" class="text-sm text-slate-300"></span>
+        </div>
+        <div class="ml-auto flex gap-2">
+          <button onclick="downloadResult('md')"
+            class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            下載 .md
+          </button>
+          <button onclick="downloadResult('txt')"
+            class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            下載 .txt
+          </button>
+          <button onclick="copyMarkdown()"
+            class="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+            </svg>
+            複製 MD
+          </button>
+          <button onclick="resetApp()"
+            class="px-4 py-2 border border-slate-600 hover:border-slate-400 rounded-lg text-sm text-slate-400 hover:text-slate-200 transition-colors">
+            重新上傳
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex gap-1 mb-4 bg-slate-800 rounded-lg p-1 w-fit">
+        <button id="tab-rendered" onclick="switchTab('rendered')"
+          class="px-4 py-2 rounded-md text-sm font-medium bg-slate-700 text-white transition-colors">
+          Markdown 預覽
+        </button>
+        <button id="tab-raw" onclick="switchTab('raw')"
+          class="px-4 py-2 rounded-md text-sm font-medium text-slate-400 hover:text-white transition-colors">
+          原始 Markdown
+        </button>
+        <button id="tab-txt" onclick="switchTab('txt')"
+          class="px-4 py-2 rounded-md text-sm font-medium text-slate-400 hover:text-white transition-colors">
+          純文字
+        </button>
+      </div>
+
+      <!-- Content panels -->
+      <div class="bg-slate-800 rounded-xl p-6 min-h-96">
+        <div id="panel-rendered" class="prose-dark"></div>
+        <pre id="panel-raw" class="hidden text-sm text-slate-300 whitespace-pre-wrap font-mono leading-relaxed"></pre>
+        <pre id="panel-txt" class="hidden text-sm text-slate-300 whitespace-pre-wrap font-mono leading-relaxed"></pre>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

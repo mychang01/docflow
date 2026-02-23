@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.mistral.ai)",
+      "Bash(cat:*)",
+      "Bash(pip install:*)",
+      "Bash(which pip3:*)",
+      "Bash(python3:*)",
+      "Bash(venv/bin/uvicorn main:app:*)",
+      "Skill(arscontexta:掃描)"
+    ]
+  }
+}
